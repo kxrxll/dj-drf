@@ -1,19 +1,16 @@
-# TODO: опишите необходимые обработчики, рекомендуется использовать generics APIView классы:
-# TODO: ListCreateAPIView, RetrieveUpdateAPIView, CreateAPIView
-from rest_framework.generics import CreateAPIView, ListAPIView, RetrieveAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from measurement.models import Sensor, Measurement
-from measurement.serializers import SensorSerializer
+from measurement.serializers import SensorSerializer, SensorCreateSerializer, MeasurementCreateSerializer, \
+    MeasurementSerializer
 
 
 class SensorView(APIView):
     def post(self, request, **kwargs):
-        name = request.POST.get('name')
-        description = request.POST.get('description')
-        new_sensor = Sensor(name=name, description=description)
-        new_sensor.save()
+        ser = SensorCreateSerializer(data=request.data)
+        if ser.is_valid():
+            ser.save()
         return Response({'status': 'OK'})
 
     def patch(self, request, **kwargs):
@@ -24,9 +21,8 @@ class SensorView(APIView):
         sensor.name = name
         sensor.description = description
         sensor.save()
-        ser = SensorSerializer(sensor)
+        ser = SensorCreateSerializer(sensor)
         return Response(ser.data)
-        # return Response({'status': 'OK'})
 
     def get(self, request, **kwargs):
         sensors = Sensor.objects.all()
@@ -34,10 +30,15 @@ class SensorView(APIView):
         return Response(ser.data)
 
 
-class MeasurementView(CreateAPIView):
+class MeasurementView(APIView):
     def post(self, request, **kwargs):
-        sensor_id = request.POST.get('id')
-        temperature = request.POST.get('temperature')
-        new_measurement = Measurement(sensor=sensor_id, temperature=temperature)
-        new_measurement.save()
-        return Response({'status': 'OK'})
+        ser = MeasurementCreateSerializer(data=request.data)
+        if ser.is_valid():
+            ser.save()
+            return Response({'status': 'OK'})
+        return Response({'status': 'ERROR'})
+
+    def get(self, request, measurement_id):
+        sensors = Measurement.objects.get(id=measurement_id)
+        ser = MeasurementSerializer(sensors, many=True)
+        return Response(ser.data)
